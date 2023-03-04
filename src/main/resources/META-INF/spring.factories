@@ -1,2 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.jack.utils.web.DateConfig,\
-  com.jack.utils.thread.DynamicTask
+  com.jack.utils.thread.DynamicTask,\
+  com.jack.utils.web.GlobalExceptionHandler
