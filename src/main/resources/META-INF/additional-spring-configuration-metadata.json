@@ -1,0 +1,17 @@
+{"groups": [
+  {
+    "name": "jack.redis",
+    "type": "com.jack.utils.redis.RedisProperties",
+    "sourceType": "com.jack.utils.redis.RedisProperties"
+  }
+],"properties": [
+  {
+    "name": "jack.redis.time-to-live",
+    "type": "java.lang.Integer",
+    "sourceType": "com.jack.utils.redis.RedisProperties",
+    "description": "redis缓存过期时间，单位：秒.",
+    "defaultValue": "60"
+  }
+],"hints": [
+
+]}
