@@ -88,3 +88,13 @@ public void beforeQuery(Executor executor, MappedStatement ms, Object parameter,
 至此，完成了分页查询操作。
 
 总结：mybatis-plus的分页查询，是通过拦截器，在执行sql之前，检查参数中是否有分页参数，如果有，则根据数据库断言拼接分页查询sql。
+
+# 四、扩展
+
+**如果在mapper.xml中编写了sql语句，如何实现分页？**
+
+了解mybatis-plus的分页原理后，就知道要实现分页，只需要在sql中加入分页参数`IPage`就可以了。后续的分页由拦截器完成。
+
+![image-20230305152711299](https://jack-image.oss-cn-shenzhen.aliyuncs.com/image/image-20230305152711299.png)
+
+![image-20230305152723970](https://jack-image.oss-cn-shenzhen.aliyuncs.com/image/image-20230305152723970.png)
