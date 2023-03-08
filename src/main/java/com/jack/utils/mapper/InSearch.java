@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.util.Assert;
@@ -131,16 +132,33 @@ public final class InSearch {
             return;
         }
 
-        for (Object entity : entityList) {
-            String matchFieldName = EntityLambdaUtils.getFieldByFunction(matchColumn);
-            Field matchField = ReflectionUtils.findField(entity.getClass(), matchFieldName);
-            assert matchField != null;
-            matchField.setAccessible(true);
-            Object matchFieldValue = matchField.get(entity);
+        String matchFieldName = EntityLambdaUtils.getFieldByFunction(matchColumn);
+        Field matchField = null;
 
-            for (E data : dataList) {
-                String sourceFieldName = EntityLambdaUtils.getFieldByFunction(sourceColumn);
-                Field sourceField = ReflectionUtils.findField(data.getClass(), sourceFieldName);
+        String sourceFieldName = EntityLambdaUtils.getFieldByFunction(sourceColumn);
+        Field sourceField = null;
+
+        String targetFieldName = EntityLambdaUtils.getFieldByFunction(targetColumn);
+        Field targetField = null;
+
+        boolean needEnsureEmbedColumnClass = true;      // true：检验待填充字段，是否和mapper的泛型类型一致
+
+        String embedColumnName = null;
+        Field embedField = null;
+
+        for (E data : dataList) {
+            for (Object entity : entityList) {
+                if (Objects.isNull(matchField)) {
+                    matchField = ReflectionUtils.findField(entity.getClass(), matchFieldName);
+                }
+
+                assert matchField != null;
+                matchField.setAccessible(true);
+                Object matchFieldValue = matchField.get(entity);
+
+                if (Objects.isNull(sourceField)) {
+                    sourceField = ReflectionUtils.findField(data.getClass(), sourceFieldName);
+                }
 
                 Object sourceValue = sourceField.get(data);
                 if (Objects.isNull(sourceValue)) {
@@ -152,7 +170,48 @@ public final class InSearch {
                     continue;
                 }
 
-                fillTargetValue(targetColumn, mapper, entity, data, embedColumn);
+                if (Objects.isNull(targetField)) {
+                    targetField = ReflectionUtils.findField(data.getClass(), targetFieldName);
+                }
+
+                if (Objects.isNull(targetField)) {
+                    throw new IllegalArgumentException(data.getClass().getName() + " not exist column: " + targetFieldName);
+                }
+
+                if (needEnsureEmbedColumnClass) {
+                    Class<?> actualClass = null;
+                    Type type = ((Class<?>) mapper.getClass().getGenericInterfaces()[0]).getGenericInterfaces()[0];
+                    if (type instanceof ParameterizedType) {
+                        ParameterizedType parameterizedType = (ParameterizedType) type;
+                        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                        actualClass = (Class<?>) actualTypeArguments[0];
+                    } else {
+                        log.info("===>mapper没有泛型信息");
+                    }
+
+                    String actualClassName = Objects.isNull(actualClass) ? "null" : actualClass.getName();
+                    Class<?> targetFieldType = targetField.getType();
+                    if (embedColumn == null && !targetFieldType.equals(actualClass)) {
+                        log.error("need Class = {}, but found = {}", targetFieldType.getName(), actualClassName);
+                        StringBuilder builder = new StringBuilder("要填充的字段")
+                                .append(targetFieldName).append("类型为").append(targetFieldType.getName())
+                                .append("，但是提供的mapper的泛型类型却是").append(actualClassName);
+                        throw new IllegalArgumentException(builder.toString());
+                    }
+
+                    needEnsureEmbedColumnClass = false;
+                }
+
+                if (embedColumn != null && Objects.isNull(embedColumnName)) {
+                    embedColumnName = EntityLambdaUtils.getFieldByFunction(embedColumn);
+                }
+
+                if (StringUtils.isNotBlank(embedColumnName) && Objects.isNull(embedField)) {
+                    embedField = ReflectionUtils.findField(entity.getClass(), embedColumnName);
+                }
+
+                fillTargetValue(entity, data, embedColumn, embedColumnName, embedField, targetField);
+                break;
             }
         }
     }
@@ -247,68 +306,43 @@ public final class InSearch {
 
     /**
      * 填充实体类的目标字段
-     * @param targetColumn  目标字段get方法
-     * @param mapper    目标字段实体类的mapper
-     * @param value     要填充的值
-     * @param item      实体类
-     * @param embedColumn   目标字段的内嵌字段
+     *
+     * @param value        要填充的值
+     * @param item         实体类
+     * @param embedColumn  目标字段的内嵌字段
+     * @param embedColumnName   内嵌字段名称
+     * @param embedField    内嵌字段Field对象
+     * @param targetField   目标字段Field对象
      */
     @SneakyThrows(IllegalAccessException.class)
-    private static <T, E, TK, TV> void fillTargetValue(EntityLambdaUtils.Column<TK, TV> targetColumn,
-                                                       BaseMapper<T> mapper,
-                                                       Object value,
-                                                       E item,
-                                                       EntityLambdaUtils.Column<T, ?> embedColumn) {
-        String targetFieldName = EntityLambdaUtils.getFieldByFunction(targetColumn);
-        Field targetField = ReflectionUtils.findField(item.getClass(), targetFieldName);
-        if (Objects.isNull(targetField)) {
-            throw new IllegalArgumentException(item.getClass().getName() + " not exist column: " + targetFieldName);
-        }
-
-        Class<?> targetFieldType = targetField.getType();
-        Class<?> actualClass = null;
-
-        Type type = ((Class<?>) mapper.getClass().getGenericInterfaces()[0]).getGenericInterfaces()[0];
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
-            actualClass = (Class<?>) actualTypeArguments[0];
-        } else {
-            log.info("===>mapper没有泛型信息");
-        }
-
-        String actualClassName = Objects.isNull(actualClass) ? "null" : actualClass.getName();
-        if (embedColumn == null && !targetFieldType.equals(actualClass)) {
-            log.error("need Class = {}, but found = {}", targetFieldType.getName(), actualClassName);
-            StringBuilder builder = new StringBuilder("要填充的字段")
-                    .append(targetFieldName).append("类型为").append(targetFieldType.getName())
-                    .append("，但是提供的mapper的泛型类型却是").append(actualClassName);
-            throw new IllegalArgumentException(builder.toString());
-        }
-
+    private static <T, E> void fillTargetValue(Object value,
+                                               E item,
+                                               EntityLambdaUtils.Column<T, ?> embedColumn,
+                                               String embedColumnName,
+                                               Field embedField,
+                                               Field targetField) {
         targetField.setAccessible(true);
         if (embedColumn == null) {
             ReflectionUtils.setField(targetField, item, value);
-        } else {
-            String embedColumnName = EntityLambdaUtils.getFieldByFunction(embedColumn);
-            Field embedField = ReflectionUtils.findField(value.getClass(), embedColumnName);
-            if (Objects.isNull(embedField)) {
-                throw new IllegalArgumentException(value.getClass().getName() + " not exist column: " + embedColumnName);
-            }
-
-            embedField.setAccessible(true);
-            Object embedValue = embedField.get(value);
-            Object transformValue;
-            try {
-                transformValue = tryToTransformTargetType(embedValue, targetFieldType);
-            } catch (Exception e) {
-                log.error("===>transform happen error. '{}' need data type: {}, buf found: {}",
-                        embedColumnName, targetFieldType.getName(), embedField.getType().getName());
-                throw new IllegalArgumentException("类型转换失败", e);
-            }
-
-            ReflectionUtils.setField(targetField, item, transformValue);
+            return;
         }
+
+        if (Objects.isNull(embedField)) {
+            throw new IllegalArgumentException(value.getClass().getName() + " not exist column: " + embedColumnName);
+        }
+
+        embedField.setAccessible(true);
+        Object embedValue = embedField.get(value);
+        Object transformValue;
+        try {
+            transformValue = tryToTransformTargetType(embedValue, targetField.getType());
+        } catch (Exception e) {
+            log.error("===>transform happen error. '{}' need data type: {}, buf found: {}",
+                    embedColumnName, targetField.getType().getName(), embedField.getType().getName());
+            throw new IllegalArgumentException("类型转换失败", e);
+        }
+
+        ReflectionUtils.setField(targetField, item, transformValue);
     }
 
     /**
