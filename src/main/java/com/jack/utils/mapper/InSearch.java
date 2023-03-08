@@ -32,6 +32,11 @@ public final class InSearch {
     private static final ConversionService CONVERSION_SERVICE = new DefaultConversionService();
 
     /**
+     * in查询最大查询条件的个数
+     */
+    private static final int MAX_IN_QUERY_ITEM = 1000;
+
+    /**
      * ignore. 参考{@link #fillDetail(List, Entry, BaseMapper, EntityLambdaUtils.Column, EntityLambdaUtils.Column)}
      */
     public static <T, E, SK, SV, TK, TV> void fillDetail(List<E> dataList,
@@ -119,8 +124,8 @@ public final class InSearch {
             return;
         }
 
-        List entityList = mapper.selectList(new LambdaQueryWrapper<T>()
-                .in(matchColumn, sourceSet));
+        LambdaQueryWrapper<T> inQueryWrapper = assembleInQueryWrapper(matchColumn, sourceSet);
+        List entityList = mapper.selectList(inQueryWrapper);
         if (CollectionUtils.isEmpty(entityList)) {
             log.info("===>entityList is empty. no data from database. sourceSet = {}", sourceSet);
             return;
@@ -138,13 +143,78 @@ public final class InSearch {
                 Field sourceField = ReflectionUtils.findField(data.getClass(), sourceFieldName);
 
                 Object sourceValue = sourceField.get(data);
-                if (Objects.isNull(sourceValue) || !sourceValue.equals(matchFieldValue)) {
+                if (Objects.isNull(sourceValue)) {
+                    continue;
+                }
+
+                Object convertMatchFieldValue = CONVERSION_SERVICE.convert(matchFieldValue, sourceValue.getClass());
+                if (!sourceValue.equals(convertMatchFieldValue)) {
                     continue;
                 }
 
                 fillTargetValue(targetColumn, mapper, entity, data, embedColumn);
             }
         }
+    }
+
+    /**
+     * 组装in查询
+     * <p></p>
+     * 由于in查询存在长度限制，此方法会对sql进行优化
+     * <p></p>
+     *
+     * @param matchColumn   用于查询的列对应的实体类字段
+     * @param sourceSet     取值集合
+     * @return  in查询的QueryWrapper
+     */
+    private static <T> LambdaQueryWrapper<T> assembleInQueryWrapper(EntityLambdaUtils.Column<T, ?> matchColumn, Set<Object> sourceSet) {
+        if (CollectionUtils.isEmpty(sourceSet)) {
+            throw new IllegalArgumentException("sourceSet can not be empty");
+        }
+
+        LinkedHashSet<Object> totalValueSet = new LinkedHashSet<>(sourceSet);
+
+        int pageSize = (totalValueSet.size() % MAX_IN_QUERY_ITEM) == 0
+                ?  (totalValueSet.size() / MAX_IN_QUERY_ITEM)
+                : (totalValueSet.size() / MAX_IN_QUERY_ITEM) + 1;
+        if (pageSize == 1) {
+            return new LambdaQueryWrapper<T>().in(matchColumn, sourceSet);
+        }
+
+        LinkedHashSet<Object> firstSet = truncateValueSet(0, totalValueSet);
+        LambdaQueryWrapper<T> inQueryWrapper = new LambdaQueryWrapper<T>().in(matchColumn, firstSet);
+
+        for (int i=1; i<pageSize; i++) {
+            LinkedHashSet<Object> targetValueSet = truncateValueSet(i, totalValueSet);
+            inQueryWrapper.or().in(matchColumn, targetValueSet);
+        }
+
+        return inQueryWrapper;
+    }
+
+    /**
+     * 截取"一页"长度的元素
+     *
+     * @param index         页码。从0开始
+     * @param totalValueSet 总的元素集合
+     * @return 一页元素的集合
+     */
+    private static LinkedHashSet<Object> truncateValueSet(int index, LinkedHashSet<Object> totalValueSet) {
+        if (CollectionUtils.isEmpty(totalValueSet)) {
+            throw new IllegalArgumentException("totalValueSet can not be empty");
+        }
+
+        // [start, end)
+        int start = index * MAX_IN_QUERY_ITEM;
+        if (start >= totalValueSet.size()) {
+            return new LinkedHashSet<>();
+        }
+
+        start = Math.min((start), (totalValueSet.size() - 1));
+        int end = Math.min((index + 1) * MAX_IN_QUERY_ITEM, (totalValueSet.size()));
+
+        Object[] totalValueArray = totalValueSet.toArray();
+        return new LinkedHashSet<>(Arrays.asList(totalValueArray).subList(start, end));
     }
 
     @EqualsAndHashCode
