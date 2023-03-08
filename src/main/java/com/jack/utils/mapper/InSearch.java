@@ -19,12 +19,27 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
 
+/**
+ * 抽取通用的in查询逻辑
+ * @author jack
+ * @since 1.0
+ */
 @Slf4j
 public final class InSearch {
 
     private InSearch() {};
 
     private static final ConversionService CONVERSION_SERVICE = new DefaultConversionService();
+
+    /**
+     * ignore. 参考{@link #fillDetail(List, Entry, BaseMapper, EntityLambdaUtils.Column, EntityLambdaUtils.Column)}
+     */
+    public static <T, E, SK, SV, TK, TV> void fillDetail(List<E> dataList,
+                                                         Entry<SK, SV, TK, TV> dataEntry,
+                                                         BaseMapper<T> mapper,
+                                                         EntityLambdaUtils.Column<T, ?> matchColumn) {
+        fillDetail(dataList, dataEntry, mapper, matchColumn, null);
+    }
 
     /**
      * 抽取共性的字段查询填充。
@@ -42,24 +57,27 @@ public final class InSearch {
      * 此例子使用本方法实现，写法是这样的：
      * <P></P>
      * <blockquote><pre>
-     *     InSearch.fillDetail(page.getRecords(),
-     * 		    new InSearch.Entry<>(Book::getAuthorId, Book::getAuthorMessage),
+     *     InSearch.fillDetail(bookList,
+     * 		    new InSearch.Entry<>(Book::getAuthorId, Book::getAuthor),
      * 		    authorMapper,
      * 		    Author::getId);
+     * </pre></blockquote>
+     * 如果说Book（书籍）的临时字段author保存的并不是对象Author(作者)，而只是作者的名字，即Author的name字段。
+     * 那么可以指定取查询结果的name字段，填充到Book（书籍）的临时字段author。写法如下：
+     * <blockquote><pre>
+     *      InSearch.fillDetail(bookList,
+ * 				new InSearch.Entry<>(Book::getAuthorId, Book::getAuthor),
+ * 				authorMapper,
+ * 				Author::getId,
+ * 				Author::getName);
      * </pre></blockquote>
      *
      * @param dataList      数据的集合，对应例子中的Book（书籍）列表
      * @param dataEntry     要取实体类的哪个字段进行查询，结果填充到实体类的哪个字段。key：对应例子中Book（书籍）的authorId字段。value：对应例子中Book（书籍）的临时字段author
      * @param mapper        用于查询目标数据的mapper，对应例子中Author(作者)的mapper
      * @param matchColumn   目标数据用于匹配的字段的get方法，对应例子中Author(作者)的id字段
+     * @param embedColumn   如果要填充的数据不是直接查询出来的目标数据，而是其某一字段，通过此参数指定
      */
-    public static <T, E, SK, SV, TK, TV> void fillDetail(List<E> dataList,
-                                                         Entry<SK, SV, TK, TV> dataEntry,
-                                                         BaseMapper<T> mapper,
-                                                         EntityLambdaUtils.Column<T, ?> matchColumn) {
-        fillDetail(dataList, dataEntry, mapper, matchColumn, null);
-    }
-
     @SneakyThrows(IllegalAccessException.class)
     public static <T, E, SK, SV, TK, TV> void fillDetail(List<E> dataList,
                                                          Entry<SK, SV, TK, TV> dataEntry,
