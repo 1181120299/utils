@@ -3,6 +3,11 @@
     "name": "jack.redis",
     "type": "com.jack.utils.redis.RedisProperties",
     "sourceType": "com.jack.utils.redis.RedisProperties"
+  },
+  {
+    "name": "jack.mapper",
+    "type": "com.jack.utils.mapper.annotation.MapperProperties",
+    "sourceType": "com.jack.utils.mapper.annotation.MapperProperties"
   }
 ],"properties": [
   {
@@ -11,7 +16,26 @@
     "sourceType": "com.jack.utils.redis.RedisProperties",
     "description": "redis缓存过期时间，单位：秒.",
     "defaultValue": "60"
+  },
+  {
+    "name": "jack.mapper.delete-test-data",
+    "type": "java.lang.Boolean",
+    "sourceType": "com.jack.utils.mapper.annotation.MapperProperties",
+    "description": "是否删除测试数据.",
+    "defaultValue": false
   }
 ],"hints": [
-
+  {
+    "name": "jack.mapper.delete-test-data",
+    "values": [
+      {
+        "value": true,
+        "description": "程序启动时清除测试数据."
+      },
+      {
+        "value": false,
+        "description": "不清除测试数据."
+      }
+    ]
+  }
 ]}

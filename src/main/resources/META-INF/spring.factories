@@ -1,4 +1,5 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.jack.utils.web.DateConfig,\
   com.jack.utils.thread.DynamicTask,\
   com.jack.utils.web.GlobalExceptionHandler,\
-  com.jack.utils.redis.RedisConfig
+  com.jack.utils.redis.RedisConfig,\
+  com.jack.utils.mapper.annotation.DeleteTestDataProcessor
