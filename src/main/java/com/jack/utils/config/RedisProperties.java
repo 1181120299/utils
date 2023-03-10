@@ -1,4 +1,4 @@
-package com.jack.utils.redis;
+package com.jack.utils.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
