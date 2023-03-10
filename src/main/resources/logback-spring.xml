@@ -74,7 +74,7 @@
 
     <!-- 本地环境输出至控制台 -->
     <!-- 如果使用了 springProfile, 需要将logback.xml名称改为logback-spring.xml-->
-    <springProfile name="dev">
+    <springProfile name="!prod">
         <root level="DEBUG">
             <appender-ref ref="CONSOLE" />
         </root>
