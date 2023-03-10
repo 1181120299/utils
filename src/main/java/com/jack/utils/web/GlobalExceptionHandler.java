@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
 @Order(value = Ordered.HIGHEST_PRECEDENCE)
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({MissingServletRequestParameterException.class, HttpRequestMethodNotSupportedException.class})
+    @ExceptionHandler({MissingServletRequestParameterException.class, MissingServletRequestPartException.class, HttpRequestMethodNotSupportedException.class})
     public R missingServletRequestParameter(Exception e) {
         log.debug(e.getMessage(), e);
         return R.error(e.getMessage());
@@ -39,7 +40,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler({ConstraintViolationException.class})
-    public R handleMethodArgumentNotValidException(ConstraintViolationException e)  {
+    public R handleConstraintViolationException(ConstraintViolationException e)  {
         log.debug(e.getMessage(), e);
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
