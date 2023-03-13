@@ -2,7 +2,14 @@ package com.jack.utils.web;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.jack.utils.config.MapperProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.util.Assert;
 
 import java.util.HashMap;
@@ -16,21 +23,48 @@ import java.util.Objects;
  * @author chenjiabao
  */
 @Slf4j
-public class R extends HashMap<String, Object> {
+public class R extends HashMap<String, Object> implements ApplicationContextAware {
 
 	private static final long serialVersionUID = 1L;
 
-	public static final String CODE = "retCode";
-	public static final String MSG = "retMsg";
-	public static final String DATA = "data";
+	private static String CODE = "retCode";
+	private static String MSG = "retMsg";
+	private static String DATA = "data";
 
-	public static final int CODE_OK = 2000;
-	public static final int CODE_ERROR = 2999;
+	private static int CODE_OK = 2000;
+	private static int CODE_ERROR = 2999;
+
+	private ApplicationContext applicationContext;
 	
 	public R() {
 		put(CODE, CODE_OK);
 		put(MSG, "请求成功");
 		put(DATA, new JSONObject());
+	}
+
+	@EventListener(ContextRefreshedEvent.class)
+	public void processStartedEvent() {
+		MapperProperties mapperProperties = applicationContext.getBean(MapperProperties.class);
+
+		if (StringUtils.isNotBlank(mapperProperties.getResponseCodeField())) {
+			R.CODE = mapperProperties.getResponseCodeField().trim();
+		}
+
+		if (StringUtils.isNotBlank(mapperProperties.getResponseMessageField())) {
+			R.MSG = mapperProperties.getResponseMessageField().trim();
+		}
+
+		if (StringUtils.isNotBlank(mapperProperties.getResponseDataField())) {
+			R.DATA = mapperProperties.getResponseDataField().trim();
+		}
+
+		if (mapperProperties.getResponseCorrectCode() != null) {
+			R.CODE_OK = mapperProperties.getResponseCorrectCode();
+		}
+
+		if (mapperProperties.getResponseErrorCode() != null) {
+			R.CODE_ERROR = mapperProperties.getResponseErrorCode();
+		}
 	}
 	
 	public static R error() {
@@ -69,11 +103,20 @@ public class R extends HashMap<String, Object> {
 		return this;
 	}
 
+	/**
+	 * 设置接口的响应数据
+	 * @param data	数据
+	 * @return	响应格式封装类
+	 */
 	public R setData(Object data) {
 		put(DATA, data);
 		return this;
 	}
 
+	/**
+	 * 获取接口的响应数据
+	 * @return	数据
+	 */
 	public Object getData() {
 		return get(DATA);
 	}
@@ -116,21 +159,60 @@ public class R extends HashMap<String, Object> {
 		return JSON.parseArray(JSON.toJSONString(obj), clazz);
 	}
 
+	/**
+	 * 获取接口的提示信息
+	 * @return	提示信息
+	 */
 	public String getMsg() {
 		return (String) get(MSG);
 	}
 
+	/**
+	 * 设置接口的提示信息
+	 * @param msg	提示信息
+	 * @return	响应格式封装类
+	 */
 	public R setMsg(String msg) {
 		put(MSG, msg);
 		return this;
 	}
 
+	/**
+	 * 获取接口的响应状态码
+	 * @return	状态码
+	 */
 	public int getCode() {
 		return (int) get(CODE);
 	}
 
+	/**
+	 * 设置接口的响应状态码
+	 * @param code	状态码
+	 * @return	响应格式封装类
+	 */
 	public R setCode(int code) {
 		put(CODE, code);
 		return this;
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
+
+	/**
+	 * 返回定义的正常状态码
+	 * @return	正常状态码
+	 */
+	public static int getCodeOk() {
+		return CODE_OK;
+	}
+
+	/**
+	 * 返回定义的错误状态码
+	 * @return	错误状态码
+	 */
+	public static int getCodeError() {
+		return CODE_ERROR;
 	}
 }

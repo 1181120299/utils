@@ -50,6 +50,18 @@ jack:
 
 （2）搭配代码生成器`jack-generator`使用，使用代码生成器，会生成实体类对应的DTO。控制器（controller）中也会加上参数校验相关注解。
 
+**补充：**关于统一的接口返回格式，可以通过配置项进行自定义。参考如下配置：
+
+```yml
+jack:
+    mapper:
+        response-code-field: myCode
+        response-message-field: MyMessage
+        response-data-field: myData
+        response-correct-code: 200
+        response-error-code: 500
+```
+
 # 四、日期格式参数接收
 
 可以直接使用`java.util.Date`对象接收前段传递的日期格式参数。

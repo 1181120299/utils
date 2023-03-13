@@ -23,6 +23,41 @@
     "sourceType": "com.jack.utils.config.MapperProperties",
     "description": "是否删除测试数据.",
     "defaultValue": false
+  },
+  {
+    "name": "jack.mapper.response-code-field",
+    "type": "java.lang.String",
+    "sourceType": "com.jack.utils.config.MapperProperties",
+    "description": "接口响应格式中状态码的字段名称.",
+    "defaultValue": "retCode"
+  },
+  {
+    "name": "jack.mapper.response-message-field",
+    "type": "java.lang.String",
+    "sourceType": "com.jack.utils.config.MapperProperties",
+    "description": "接口响应格式中信息字段名称.",
+    "defaultValue": "retMsg"
+  },
+  {
+    "name": "jack.mapper.response-data-field",
+    "type": "java.lang.String",
+    "sourceType": "com.jack.utils.config.MapperProperties",
+    "description": "接口响应格式中数据字段名称.",
+    "defaultValue": "data"
+  },
+  {
+    "name": "jack.mapper.response-correct-code",
+    "type": "java.lang.Integer",
+    "sourceType": "com.jack.utils.config.MapperProperties",
+    "description": "接口响应格式中正常的状态码值.",
+    "defaultValue": 2000
+  },
+  {
+    "name": "jack.mapper.response-error-code",
+    "type": "java.lang.Integer",
+    "sourceType": "com.jack.utils.config.MapperProperties",
+    "description": "接口响应格式中异常的状态码值.",
+    "defaultValue": 2999
   }
 ],"hints": [
   {

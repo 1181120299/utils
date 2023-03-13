@@ -9,7 +9,7 @@ public class RRException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 	
     private String msg;
-    private int code = R.CODE_ERROR;
+    private int code = R.getCodeError();
 
 	/**
 	 * 此构造器不应直接调用，只是用于反射。
