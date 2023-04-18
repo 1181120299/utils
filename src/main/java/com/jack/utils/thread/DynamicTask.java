@@ -5,6 +5,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.CronTask;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @EnableScheduling
+@Conditional(SpringBootVersionCondiction.class)
 public class DynamicTask implements SchedulingConfigurer {
 
     /**
