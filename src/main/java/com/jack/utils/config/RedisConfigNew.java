@@ -23,12 +23,15 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 兼容高版本的Spring boot，例如3.0.5
+ */
 @Configuration
 @EnableCaching
 @Slf4j
-@ConditionalOnProperty(prefix = "spring.redis", name = "host")
+@ConditionalOnProperty(prefix = "spring.data.redis", name = "host")
 @EnableConfigurationProperties(RedisProperties.class)
-public class RedisConfig {
+public class RedisConfigNew {
 
     @Autowired
     private RedisProperties redisProperties;
